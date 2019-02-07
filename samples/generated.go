@@ -1,4 +1,4 @@
-package types
+package samples
 
 // ResultList is the collection of solutions results
 type ResultList []Solution

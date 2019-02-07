@@ -4,23 +4,105 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
+	"time"
 
+	"code.cloudfoundry.org/bytefmt"
 	auto "github.com/JordyBaylac/go-gen/samples"
 )
 
 func main() {
 
+	// var results auto.ResultList
+
+	// temp := auto.Solution{
+	// 	Index: 2,
+	// }
+
+	// results = append(results, temp)
+
+	// parsedResults, _ := parseExample()
+
+	// serializeExample(parsedResults)
+
+	results := make(chan string)
+	var wg sync.WaitGroup
+	wg.Add(7)
+
+	go func() {
+		defer wg.Done()
+		result := measureUnmarshalTime(100)
+		results <- result
+	}()
+
+	go func() {
+		defer wg.Done()
+		result := measureUnmarshalTime(1000)
+		results <- result
+	}()
+
+	go func() {
+		defer wg.Done()
+		result := measureUnmarshalTime(10000)
+		results <- result
+	}()
+
+	go func() {
+		defer wg.Done()
+		result := measureUnmarshalTime(100000)
+		results <- result
+	}()
+
+	go func() {
+		defer wg.Done()
+		result := measureUnmarshalTime(200000)
+		results <- result
+	}()
+
+	go func() {
+		defer wg.Done()
+		result := measureUnmarshalTime(230000)
+		results <- result
+	}()
+
+	go func() {
+		defer wg.Done()
+		result := measureUnmarshalTime(270000)
+		results <- result
+	}()
+
+	go func() {
+		for result := range results {
+			fmt.Println(result)
+		}
+	}()
+
+	wg.Wait()
+}
+
+func measureUnmarshalTime(numberOfSolutions int) (result string) {
+	solutionLen := len(getSolution())
+	totalBytes := solutionLen * numberOfSolutions
+	size := bytefmt.ByteSize(uint64(totalBytes))
+
+	startGettingData := time.Now()
+	jsonData := getJSON(numberOfSolutions)
+	elapsedGettingData := time.Since(startGettingData)
 	var results auto.ResultList
 
-	temp := auto.Solution{
-		Index: 2,
+	start := time.Now()
+	if err := json.Unmarshal(jsonData, &results); err != nil {
+		fmt.Printf("Unexpected Error: %v", err)
+	}
+	elapsed := time.Since(start)
+
+	result = fmt.Sprintf("Solutions %d.\n\tSize of %s bytes.\n\tGetting data (time taken) %f seconds.\n\tUnmarshall (time taken) %f seconds",
+		numberOfSolutions, size, elapsedGettingData.Seconds(), elapsed.Seconds())
+
+	for range results {
 	}
 
-	results = append(results, temp)
-
-	parsedResults, _ := parseExample()
-
-	serializeExample(parsedResults)
+	return
 }
 
 func serializeExample(results auto.ResultList) {
